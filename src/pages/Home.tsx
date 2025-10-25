@@ -14,7 +14,7 @@ function Home() {
   let [y, setY] = useState(100);
   let [k, setK] = useState(0);
   let [escala, setEscala] = useState(5);
-
+ 
   // converte para 0-1 antes de enviar para as funções
   const cmyk: CMYK = { c: c / 100, m: m / 100, y: y / 100, k: k / 100 };
   const listaCMYK = CriarListaCMYk(cmyk, escala);
