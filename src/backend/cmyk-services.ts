@@ -26,10 +26,40 @@ export function converterRGBparaCMYK(rgb: RGB): CMYK {
 }
 
 export function ConverterCMYKparaRGB(cmyk: CMYK): RGB {
-  const r = Math.round(255 * (1 - cmyk.c) * (1 - cmyk.k));
-  const g = Math.round(255 * (1 - cmyk.m) * (1 - cmyk.k));
-  const b = Math.round(255 * (1 - cmyk.y) * (1 - cmyk.k));
-  return { r, g, b };
+  // --- Conversão base ---
+  const C = cmyk.c;
+  const M = cmyk.m;
+  const Y = cmyk.y;
+  const K = cmyk.k;
+
+  // --- 1. Compensação de ponto de ganho (dot gain ≈ 15%) ---
+  const dotGain = 0.15;
+  const Cg = C + (1 - C) * dotGain * C;
+  const Mg = M + (1 - M) * dotGain * M;
+  const Yg = Y + (1 - Y) * dotGain * Y;
+
+  // --- 2. Conversão com correção perceptiva ---
+  let r = 255 * Math.pow(1 - Math.min(1, Cg * (1 - K) + K), 1 / 1.6);
+  let g = 255 * Math.pow(1 - Math.min(1, Mg * (1 - K) + K), 1 / 1.6);
+  let b = 255 * Math.pow(1 - Math.min(1, Yg * (1 - K) + K), 1 / 1.6);
+
+  // --- 3. Correção de balanço de cor (para remover esverdeamento e puxar tons mais reais) ---
+  r *= 0.95; // reduz leve excesso de vermelho
+  g *= 0.92; // reduz tendência ao verde
+  b *= 1.05; // reforça o azul, mais fiel ao CMYK real
+
+  // --- 4. Ajuste leve de contraste global ---
+  const contraste = 1.08;
+  r = Math.pow(r / 255, contraste) * 255;
+  g = Math.pow(g / 255, contraste) * 255;
+  b = Math.pow(b / 255, contraste) * 255;
+
+  // --- 5. Clamp final ---
+  return {
+    r: Math.min(255, Math.max(0, Math.round(r))),
+    g: Math.min(255, Math.max(0, Math.round(g))),
+    b: Math.min(255, Math.max(0, Math.round(b))),
+  };
 }
 
 export const CriarListaCMYk = (base: CMYK, escala: number): CMYK[][] => {
